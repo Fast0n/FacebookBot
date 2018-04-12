@@ -10,6 +10,7 @@ import telepot
 user_state = {}
 privacy = {}
 caption = {}
+link = {}
 
 menu = [
     ["Testo", "Foto", "Video"]
@@ -47,16 +48,15 @@ def on_chat_message(msg):
             msg['text'] = '/token'
 
     if content_type == 'text' and msg['text'] == '/token':
-        bot.sendMessage(
-            chat_id, "Inserisci il tuo token\nPer generare il token clicca [qui](https://developers.facebook.com/tools/explorer/145634995501895/)",  parse_mode='Markdown')
-        bot.sendPhoto(chat_id, 'https://github.com/Fast0n/FacebookBot/raw/master/img/sample_token.png')
+        bot.sendPhoto(
+            chat_id, 'https://github.com/Fast0n/FacebookBot/raw/master/img/sample_token.png', caption="Inserisci il tuo token!\nPer generare il token clicca su\nhttps://developers.facebook.com/tools/explorer/145634995501895/")
         user_state[chat_id] = 1
 
     elif user_state[chat_id] == 1:
         register_token_user(chat_id, msg['text'])
         user_state[chat_id] = 0
 
-    if content_type == 'text' and msg['text'] == '/publish':
+    elif content_type == 'text' and msg['text'] == '/publish':
         f = open(token_file, "r")
         for user in f.readlines():
             if user.replace('\n', '').split(":")[0] == str(chat_id):
@@ -84,38 +84,56 @@ def on_chat_message(msg):
                 user_state[chat_id] = 4
 
             elif content_type == 'text' and msg['text'] == 'Foto':
-                bot.sendMessage(chat_id, "Inserisci caption (Opzionale)[Se non vuoi scrivere niente, scrivi null]", reply_markup=ReplyKeyboardRemove(
-                    remove_keyboard=True))
+                bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
+                    remove_keyboard=True), parse_mode='Markdown')
                 user_state[chat_id] = 5
 
             elif content_type == 'text' and msg['text'] == 'Video':
-                bot.sendMessage(chat_id, "Inserisci caption (Opzionale)[Se non vuoi scrivere niente, scrivi null]", reply_markup=ReplyKeyboardRemove(
-                    remove_keyboard=True))
+                bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
+                    remove_keyboard=True), parse_mode='Markdown')
                 user_state[chat_id] = 6
 
     elif user_state[chat_id] == 5:
-        if msg['text'].lower() == 'null':
-            caption[chat_id] = ''
-        else:
-            caption[chat_id] = msg['text']
-        bot.sendMessage(chat_id, "Invia una foto")
-        user_state[chat_id] = 7
+        try:
+            if msg['text'].lower() == 'null':
+                caption[chat_id] = ''
+            else:
+                caption[chat_id] = msg['text']
+            bot.sendMessage(chat_id, "Invia una foto")
+            user_state[chat_id] = 7
+        except:
+            bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
+                remove_keyboard=True), parse_mode='Markdown')
+            user_state[chat_id] = 5
 
     elif user_state[chat_id] == 6:
-        if msg['text'].lower() == 'null':
-            caption[chat_id] = ''
-        else:
-            caption[chat_id] = msg['text']
-        bot.sendMessage(chat_id, "Invia un video")
-        user_state[chat_id] = 8
+        try:
+            if msg['text'].lower() == 'null':
+                caption[chat_id] = ''
+            else:
+                caption[chat_id] = msg['text']
+            bot.sendMessage(chat_id, "Invia un video")
+            user_state[chat_id] = 8
+        except:
+            bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
+                remove_keyboard=True), parse_mode='Markdown')
+            user_state[chat_id] = 6
 
     elif user_state[chat_id] == 4:
+        link[chat_id] = ""
+        url = msg['text'].split("\n")
+        for i in range(0, len(url)):
+            if '/' in url[i]:
+                link[chat_id] = url[i]
+                break
+
         f = open(token_file, "r")
         for user in f.readlines():
             if user.replace('\n', '').split(":")[0] == str(chat_id):
                 try:
                     graph = GraphAPI(user.replace('\n', '').split(":")[1])
                     graph.post(
+                        link=link[chat_id],
                         path='me/feed',
                         message=msg['text'],
                         privacy={"value": privacy[chat_id]},
@@ -143,7 +161,7 @@ def on_chat_message(msg):
                         # estrae l'id dell'immagine inviata
                         photo = msg['photo'][-1]['file_id']
 
-                    bot.download_file(photo, './' + name)
+                    bot.download_file(photo, name)
 
                     try:
                         graph = GraphAPI(user.replace('\n', '').split(":")[1])
@@ -188,7 +206,7 @@ def on_chat_message(msg):
                     bot.sendMessage(chat_id, "Solo video, riprova...")
 
     # donate command
-    if content_type == 'text' and msg['text'] == '/dona':
+    elif content_type == 'text' and msg['text'] == '/dona':
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
                 text="Dona", url='https://paypal.me/Fast0n/')],
