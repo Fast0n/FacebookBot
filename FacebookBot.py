@@ -13,7 +13,7 @@ caption = {}
 link = {}
 
 menu = [
-    ["Testo", "Foto", "Video"]
+    ["Testo 🗒️", "Foto 📷", "Video 🎞️"]
 ]
 
 choose = {
@@ -47,6 +47,7 @@ def on_chat_message(msg):
             bot.sendMessage(chat_id, start_msg, parse_mode='Markdown')
             msg['text'] = '/token'
 
+    # add/Edit token
     if content_type == 'text' and msg['text'] == '/token':
         bot.sendPhoto(
             chat_id, 'https://github.com/Fast0n/FacebookBot/raw/master/img/sample_token.png', caption="Inserisci il tuo token!\nPer generare il token clicca su\nhttps://developers.facebook.com/tools/explorer/145634995501895/")
@@ -56,6 +57,7 @@ def on_chat_message(msg):
         register_token_user(chat_id, msg['text'])
         user_state[chat_id] = 0
 
+    # publish text, photos and videos
     elif content_type == 'text' and msg['text'] == '/publish':
         f = open(token_file, "r")
         for user in f.readlines():
@@ -64,7 +66,7 @@ def on_chat_message(msg):
                     graph = GraphAPI(user.replace('\n', '').split(":")[1])
                     graph.get('me/posts')
                     bot.sendMessage(
-                        chat_id, "Seleziona la privacy", reply_markup=markup1)
+                        chat_id, "Seleziona la privacy 🔏", reply_markup=markup1)
                     user_state[chat_id] = 2
                 except:
                     bot.sendMessage(chat_id, "Token errato ❌")
@@ -78,132 +80,125 @@ def on_chat_message(msg):
 
     elif user_state[chat_id] == 3:
         if msg['text'] in menu[0]:
-            if content_type == 'text' and msg['text'] == 'Testo':
+            if content_type == 'text' and msg['text'].split(" ")[0] == 'Testo':
                 bot.sendMessage(chat_id, "Inserisci il testo",
                                 reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
                 user_state[chat_id] = 4
 
-            elif content_type == 'text' and msg['text'] == 'Foto':
+            elif content_type == 'text' and msg['text'].split(" ")[0] == 'Foto' or msg['text'].split(" ")[0] == 'Video':
                 bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
                     remove_keyboard=True), parse_mode='Markdown')
-                user_state[chat_id] = 5
+                if msg['text'].split(" ")[0] == 'Foto':
+                    user_state[chat_id] = 5
 
-            elif content_type == 'text' and msg['text'] == 'Video':
-                bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
-                    remove_keyboard=True), parse_mode='Markdown')
-                user_state[chat_id] = 6
+                elif msg['text'].split(" ")[0] == 'Video':
+                    user_state[chat_id] = 6
 
-    elif user_state[chat_id] == 5:
+    elif user_state[chat_id] == 5 or user_state[chat_id] == 6:
         try:
             if msg['text'].lower() == 'null':
                 caption[chat_id] = ''
             else:
                 caption[chat_id] = msg['text']
-            bot.sendMessage(chat_id, "Invia una foto")
-            user_state[chat_id] = 7
+
+            if user_state[chat_id] == 5:
+                bot.sendMessage(chat_id, "Invia una foto")
+                user_state[chat_id] = 7
+
+            if user_state[chat_id] == 6:
+                bot.sendMessage(chat_id, "Invia un video")
+                user_state[chat_id] = 8
+
         except:
             bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
                 remove_keyboard=True), parse_mode='Markdown')
             user_state[chat_id] = 5
 
-    elif user_state[chat_id] == 6:
-        try:
-            if msg['text'].lower() == 'null':
-                caption[chat_id] = ''
-            else:
-                caption[chat_id] = msg['text']
-            bot.sendMessage(chat_id, "Invia un video")
-            user_state[chat_id] = 8
-        except:
-            bot.sendMessage(chat_id, "Inserisci caption (Se non vuoi scrivere niente, scrivi `null`)", reply_markup=ReplyKeyboardRemove(
-                remove_keyboard=True), parse_mode='Markdown')
-            user_state[chat_id] = 6
-
-    elif user_state[chat_id] == 4:
-        link[chat_id] = ""
-        url = msg['text'].split("\n")
-        for i in range(0, len(url)):
-            if '/' in url[i]:
-                link[chat_id] = url[i]
-                break
-
+    elif user_state[chat_id] == 4 or user_state[chat_id] == 7 or user_state[chat_id] == 8:
         f = open(token_file, "r")
         for user in f.readlines():
             if user.replace('\n', '').split(":")[0] == str(chat_id):
-                try:
-                    graph = GraphAPI(user.replace('\n', '').split(":")[1])
-                    graph.post(
-                        link=link[chat_id],
-                        path='me/feed',
-                        message=msg['text'],
-                        privacy={"value": privacy[chat_id]},
-                        retry=0
-                    )
-                    bot.sendMessage(chat_id, "Operazione completata ✔️")
-                except:
-                    bot.sendMessage(chat_id, "Token errato ❌")
-                user_state[chat_id] = 0
-
-    elif user_state[chat_id] == 7:
-        f = open(token_file, "r")
-        for user in f.readlines():
-            if user.replace('\n', '').split(":")[0] == str(chat_id):
-                try:
+                
+                
+                if user_state[chat_id] == 4:
                     try:
-                        # estrae il nome dell'immagine inviata
-                        name = msg['photo'][0]['file_path']
-                        name = name.replace("photos/", "")
-                        # estrae l'id dell'immagine inviata
-                        photo = msg['photo'][-1]['file_id']
-                    except KeyError:
-                        # estrae il nome dell'immagine inviata
-                        name = "__pycache__/" + str(chat_id) + "_tmp.jpg"
-                        # estrae l'id dell'immagine inviata
-                        photo = msg['photo'][-1]['file_id']
-
-                    bot.download_file(photo, name)
-
-                    try:
-                        graph = GraphAPI(user.replace('\n', '').split(":")[1])
-                        graph.post(
-                            caption=caption[chat_id],
-                            path='me/photos',
-                            privacy={"value": privacy[chat_id]},
-                            source=open(name, 'rb')
-                        )
-                        bot.sendMessage(chat_id, "Operazione completata ✔️")
+                        link[chat_id] = ""
+                        url = msg['text'].split("\n")
+                        for i in range(0, len(url)):
+                            if '/' in url[i]:
+                                link[chat_id] = url[i]
+                                break
+                        try:
+                            graph = GraphAPI(user.replace(
+                                '\n', '').split(":")[1])
+                            graph.post(
+                                link=link[chat_id],
+                                path='me/feed',
+                                message=msg['text'],
+                                privacy={"value": privacy[chat_id]},
+                                retry=0
+                            )
+                            bot.sendMessage(chat_id, "Operazione completata ✅")
+                        except:
+                            bot.sendMessage(chat_id, "Token errato ❌")
                         user_state[chat_id] = 0
                     except:
-                        bot.sendMessage(chat_id, "Token errato ❌")
-                        user_state[chat_id] = 0
+                        bot.sendMessage(chat_id, "Solo testo, riprova...")
 
-                except:
-                    bot.sendMessage(chat_id, "Solo foto, riprova...")
-
-    elif user_state[chat_id] == 8:
-        f = open(token_file, "r")
-        for user in f.readlines():
-            if user.replace('\n', '').split(":")[0] == str(chat_id):
-                try:
-                    name = "__pycache__/" + str(chat_id) + "_tmp.mp4"
-                    # estrae il video inviata
-                    video = msg['video']['file_id']
-                    bot.download_file(video, './' + name)
+                elif user_state[chat_id] == 7:
                     try:
-                        graph = GraphAPI(user.replace('\n', '').split(":")[1])
-                        graph.post(
-                            caption=caption[chat_id],
-                            path='me/videos',
-                            privacy={"value": privacy[chat_id]},
-                            source=open(name, 'rb')
-                        )
-                        bot.sendMessage(chat_id, "Operazione completata ✔️")
-                        user_state[chat_id] = 0
+                        try:
+                            # estrae il nome dell'immagine inviata
+                            name = msg['photo'][0]['file_path']
+                            name = name.replace("photos/", "")
+                            # estrae l'id dell'immagine inviata
+                            photo = msg['photo'][-1]['file_id']
+                        except KeyError:
+                            # estrae il nome dell'immagine inviata
+                            name = "__pycache__/" + str(chat_id) + "_tmp.jpg"
+                            # estrae l'id dell'immagine inviata
+                            photo = msg['photo'][-1]['file_id']
+                            bot.download_file(photo, name)
+                            try:
+                                graph = GraphAPI(user.replace(
+                                    '\n', '').split(":")[1])
+                                graph.post(
+                                    caption=caption[chat_id],
+                                    path='me/photos',
+                                    privacy={"value": privacy[chat_id]},
+                                    source=open(name, 'rb')
+                                )
+                                bot.sendMessage(
+                                    chat_id, "Operazione completata ✅")
+                                user_state[chat_id] = 0
+                            except:
+                                bot.sendMessage(chat_id, "Token errato ❌")
+                                user_state[chat_id] = 0
                     except:
-                        bot.sendMessage(chat_id, "Token errato ❌")
-                        user_state[chat_id] = 0
-                except:
-                    bot.sendMessage(chat_id, "Solo video, riprova...")
+                        bot.sendMessage(chat_id, "Solo foto, riprova...")
+
+                elif user_state[chat_id] == 8:
+                    try:
+                        name = "__pycache__/" + str(chat_id) + "_tmp.mp4"
+                        # estrae il video inviata
+                        video = msg['video']['file_id']
+                        bot.download_file(video, './' + name)
+                        try:
+                            graph = GraphAPI(user.replace(
+                                '\n', '').split(":")[1])
+                            graph.post(
+                                caption=caption[chat_id],
+                                path='me/videos',
+                                privacy={"value": privacy[chat_id]},
+                                source=open(name, 'rb')
+                            )
+                            bot.sendMessage(chat_id, "Operazione completata ✅")
+                            user_state[chat_id] = 0
+                        except:
+                            bot.sendMessage(chat_id, "Token errato ❌")
+                            user_state[chat_id] = 0
+                    except:
+                        bot.sendMessage(chat_id, "Solo video, riprova...")
 
     # donate command
     elif content_type == 'text' and msg['text'] == '/dona':
@@ -215,13 +210,13 @@ def on_chat_message(msg):
                         "[FacebookBot](https://github.com/Fast0n/facebookbot)\n\n" +
                         "Sviluppato da: \n" +
                         "[Fast0n](https://github.com/Fast0n)\n\n" +
-                        "🍺 Se sei soddisFatto  ✔️ offri una birra allo sviluppatore 🍺", parse_mode='Markdown', reply_markup=keyboard)
+                        "🍺 Se sei soddisFatto  ✅ offri una birra allo sviluppatore 🍺", parse_mode='Markdown', reply_markup=keyboard)
         user_state[chat_id] = 0
 
 
 def register_token_user(chat_id, token):
     """
-    Register given token user
+    Add token user
     """
     insert = 1
 
@@ -243,7 +238,7 @@ def register_token_user(chat_id, token):
     if insert:
         f = open(token_file, "a")
         f.write(str(chat_id) + ":" + str(token) + '\n')
-        bot.sendMessage(chat_id, "Fatto  ✔️")
+        bot.sendMessage(chat_id, "Fatto  ✅")
         insert = 1
 
     f.close()
@@ -275,7 +270,7 @@ def update_user(chat_id, token):
         if register_token_user(chat_id, token):
             bot.sendMessage(chat_id, "Token aggiornato")
         else:
-            bot.sendMessage(chat_id, "Fatto  ✔️")
+            bot.sendMessage(chat_id, "Fatto  ✅")
 
         return 1
 

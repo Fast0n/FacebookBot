@@ -2,7 +2,8 @@
 token = 'TOKEN'
 
 # Message send when user 'start' the bot
-start_msg = "Benvenuto su @sample\n"\
+start_msg = "Benvenuto su @facebook\_publish\_bot\n"\
+            "Semplice Bot Telegram per inviare post, foto e video su Facebook\n"\
             "⚠️Attenzione⚠️\n"\
             "Il bot è stato creato in modo non ufficiale."
 
